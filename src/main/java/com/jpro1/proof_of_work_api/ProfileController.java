@@ -1,6 +1,6 @@
 package com.jpro1.proof_of_work_api;
 
-import java.util.Map;
+import java.time.Instant;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
@@ -9,17 +9,17 @@ import org.springframework.web.bind.annotation.RestController;
 public class ProfileController {
 
     private final GitHubClient gitHubClient;
+    private final ScoreService scoreService;
 
-    public ProfileController(GitHubClient gitHubClient) {
+    public ProfileController(GitHubClient gitHubClient, ScoreService scoreService) {
         this.gitHubClient = gitHubClient;
+        this.scoreService = scoreService;
     }
 
     @GetMapping("/profile/{username}")
-    public Map<String, Object> profile(@PathVariable String username) {
-        Map<String, Object> user = gitHubClient.getUser(username);
-        return Map.of(
-                "username", user.get("login"),
-                "publicRepos", user.get("public_repos"),
-                "followers", user.get("followers"));
+    public ScoreResult profile(@PathVariable String username) {
+        var repos = gitHubClient.getRepos(username);
+        var events = gitHubClient.getEvents(username);
+        return scoreService.calculate(username, repos, events, Instant.now());
     }
 }
